@@ -13,19 +13,41 @@ Resources:
       GroupDescription: Enable HTTP for Flask Web Server and SSH port to secure reach to my EC2 # Required
       GroupName: Romen-Number-22-80
       SecurityGroupIngress:
-        IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
-        CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
   WebServerHost:
     Type: AWS::EC2::Instance
     Properties:
+      KeyName: !Ref KeyName
       ImageId: ami-0b5eea76982371e91
-      InstanceType: "String"
-      KeyName: "String"
+      InstanceType: t2.micro
+      SecurityGroupIds:
+        - !Ref WebServerSecGrp
       Tags:
-        Tags
-      UserData: "String"
-
-  
+        - Key: Name
+          Value: !Sub Web Server of ${AWS::StackName} Stack
+      UserData: !Base64 |
+        #!/bin/bash 
+        yum update -y
+        yum install python3 -y
+        pip3 install flask
+        cd /home/ec2-user
+        wget https://raw.githubusercontent.com/yemreaydeniz/Project-Roman-Numerals-Converter/main/project-explained.py
+        mkdir templates
+        cd templates
+        wget https://raw.githubusercontent.com/yemreaydeniz/Project-Roman-Numerals-Converter/main/templates/index.html
+        wget https://raw.githubusercontent.com/yemreaydeniz/Project-Roman-Numerals-Converter/main/templates/result.html
+        cd ..
+        python3 project-explained.py
 Outputs:
+  WebSiteURL:
+    Value: !Sub 
+      - http://${PublicAddress}
+      - PublicAddress: !GetAtt WebServerHost.PublicDnsName
+    Description: Roman Numerals Converter Application URL
